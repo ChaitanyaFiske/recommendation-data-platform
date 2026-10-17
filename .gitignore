@@ -1,0 +1,28 @@
+
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+venv/
+
+# Environment variables and secrets
+.env
+.env.*
+
+# Logs
+logs/
+*.log
+
+# Large datasets and generated outputs
+data/raw/
+data/processed/
+
+# Generated model artifacts
+models/*
+!models/.gitkeep
+
+# Editor and OS files
+.vscode/
+.DS_Store
+Thumbs.db

@@ -1,0 +1,14 @@
+{
+  "model_name": "hybrid_collaborative_popularity",
+  "model_version": "1.0.0",
+  "catalog_size": 1500,
+  "minimum_movie_ratings": 1000,
+  "bayesian_rating_prior": 1000,
+  "global_mean_rating": 3.5339,
+  "top_n": 10,
+  "weights": {
+    "collaborative": 0.9,
+    "content": 0.0,
+    "popularity": 0.1
+  }
+}
