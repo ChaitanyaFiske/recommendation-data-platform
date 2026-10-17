@@ -6,6 +6,12 @@ from fastapi import FastAPI, HTTPException, Query
 
 from src.api.recommendation_service import RecommendationService
 
+from src.api.schemas import (
+    HealthResponse,
+    RecommendationsResponse,
+    MovieResponse,
+)
+
 
 logging.basicConfig(level=logging.INFO)
 service = None
@@ -32,7 +38,7 @@ app = FastAPI(
 )
 
 
-@app.get("/health")
+@app.get("/health", response_model=HealthResponse)
 def health():
     if service is None:
         raise HTTPException(
@@ -43,7 +49,7 @@ def health():
     return {"status": "ok", "model": "hybrid"}
 
 
-@app.get("/recommendations/{user_id}")
+@app.get("/recommendations/{user_id}", response_model=RecommendationsResponse)
 def get_recommendations(
     user_id: int,
     top_n: int = Query(default=10, ge=1, le=100),
@@ -68,7 +74,7 @@ def get_recommendations(
     }
 
 
-@app.get("/movies/{movie_id}")
+@app.get("/movies/{movie_id}", response_model=MovieResponse)
 def get_movie(movie_id: int):
     if service is None:
         raise HTTPException(

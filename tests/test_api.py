@@ -3,6 +3,14 @@ import pytest
 from fastapi.testclient import TestClient
 
 import src.api.app as api_module
+from pydantic import ValidationError
+
+from src.api.schemas import (
+    HealthResponse,
+    MovieResponse,
+    RecommendationItem,
+    RecommendationsResponse,
+)
 
 
 class FakeRecommendationService:
@@ -116,3 +124,58 @@ def test_unknown_movie_returns_404(client):
 
     assert response.status_code == 404
     assert "was not found" in response.json()["detail"]
+
+
+def test_health_response_schema():
+    response = HealthResponse(status="ok", model="hybrid")
+
+    assert response.status == "ok"
+    assert response.model == "hybrid"
+
+
+def test_recommendation_item_schema():
+    item = RecommendationItem(
+        movieId=1,
+        title="Toy Story (1995)",
+        genres="Adventure|Animation|Comedy",
+        hybrid_score=0.95,
+    )
+
+    assert item.movieId == 1
+    assert item.hybrid_score == 0.95
+
+
+def test_recommendations_response_schema():
+    response = RecommendationsResponse(
+        user_id=1,
+        count=1,
+        recommendations=[
+            RecommendationItem(
+                movieId=1,
+                title="Toy Story (1995)",
+                genres="Adventure|Animation|Comedy",
+                hybrid_score=0.95,
+            )
+        ],
+    )
+
+    assert response.count == len(response.recommendations)
+
+
+def test_recommendations_count_cannot_be_negative():
+    with pytest.raises(ValidationError):
+        RecommendationsResponse(
+            user_id=1,
+            count=-1,
+            recommendations=[],
+        )
+
+
+def test_movie_response_schema():
+    movie = MovieResponse(
+        movieId=2959,
+        title="Fight Club (1999)",
+        genres="Action|Crime|Drama|Thriller",
+    )
+
+    assert movie.title == "Fight Club (1999)"
