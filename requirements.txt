@@ -8,3 +8,6 @@ jupyter
 python-dotenv
 pytest
 duckdb
+fastapi
+uvicorn
+httpx
