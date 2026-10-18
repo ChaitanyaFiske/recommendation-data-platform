@@ -1,4 +1,4 @@
-
+﻿
 import logging
 import threading
 
@@ -89,28 +89,61 @@ class RecommendationService:
 
         logging.info("Building collaborative similarity matrix...")
 
-        interactions = self.con.execute(
+        interaction_cursor = self.con.execute(
             """
             SELECT c.item_idx, r.userId, r.rating
             FROM read_parquet(?) r
             JOIN catalog_mapping c USING (movieId)
             """,
             [str(RATINGS_FILE)],
-        ).fetchdf()
+        )
 
-        max_user_id = int(interactions["userId"].max())
+        item_chunks = []
+        user_chunks = []
+        rating_chunks = []
+        max_user_id = 0
+
+        while True:
+            batch = interaction_cursor.fetch_df_chunk(100)
+
+            if batch.empty:
+                break
+
+            item_chunks.append(
+                batch["item_idx"].to_numpy(dtype=np.int32)
+            )
+            user_chunks.append(
+                batch["userId"].to_numpy(dtype=np.int32)
+            )
+            rating_chunks.append(
+                batch["rating"].to_numpy(dtype=np.float32)
+            )
+
+            max_user_id = max(
+                max_user_id,
+                int(batch["userId"].max()),
+            )
+
+            del batch
+
+        logging.info("Converting interaction batches to sparse matrix...")
+
+        item_indices = np.concatenate(item_chunks)
+        user_indices = np.concatenate(user_chunks)
+        rating_values = np.concatenate(rating_chunks)
+
+        del item_chunks, user_chunks, rating_chunks
 
         item_user = csr_matrix(
             (
-                interactions["rating"].to_numpy(dtype=np.float32),
-                (
-                    interactions["item_idx"].to_numpy(dtype=np.int32),
-                    interactions["userId"].to_numpy(dtype=np.int32),
-                ),
+                rating_values,
+                (item_indices, user_indices),
             ),
             shape=(len(self.catalog), max_user_id + 1),
             dtype=np.float32,
         )
+
+        del item_indices, user_indices, rating_values
 
         normalized = normalize(item_user, norm="l2", axis=1)
         self.similarity = normalized @ normalized.T
@@ -130,7 +163,7 @@ class RecommendationService:
             * GLOBAL_MEAN
         )
 
-        del interactions, item_user, normalized
+        del item_user, normalized
 
         logging.info(
             "Recommendation service ready: %s candidate movies.",
